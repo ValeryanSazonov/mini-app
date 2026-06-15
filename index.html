@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Подорожник</title>
+
+  <!-- Telegram Mini App SDK — обязательно первым -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ═══ ГЛАВНАЯ ═══ -->
+  <div class="screen active" id="s-home">
+    <div class="topbar">
+      <div class="topbar-title">Подорожник 🚌</div>
+      <div class="topbar-sub" id="tg-username">Санкт-Петербург</div>
+    </div>
+    <div class="section">
+      <!-- Карточка баланса -->
+      <div class="card" id="balance-card">
+        <div class="card-label">Баланс карты</div>
+        <div class="card-value" id="balance-display">— ₽</div>
+        <div class="card-sub">
+          <span class="badge" id="balance-badge">Введи баланс вручную</span>
+          <span id="card-number-display"></span>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="stat">
+          <div class="stat-label">Поездок за месяц</div>
+          <div class="stat-val" id="trips-count">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Потрачено</div>
+          <div class="stat-val" id="trips-spent">0 ₽</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="switchTab('topup')">+ Пополнить карту</button>
+      <button class="btn-secondary" onclick="switchTab('routes')">🗺 Маршруты СПб</button>
+    </div>
+
+    <!-- Последние поездки -->
+    <div class="section" style="padding-top:0">
+      <div class="section-label">Последние поездки</div>
+      <div class="card" style="padding:4px 16px" id="recent-trips">
+        <div class="empty-state">
+          <p>Поездок пока нет</p>
+          <p class="empty-hint">Добавь первую во вкладке «История»</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ПОПОЛНЕНИЕ ═══ -->
+  <div class="screen" id="s-topup">
+    <div class="topbar">
+      <div class="topbar-title">Пополнение</div>
+      <div class="topbar-sub">Выбери способ оплаты</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Способ оплаты</div>
+      <div class="topup-option selected" id="opt-sbp" onclick="selectPayment('sbp')">
+        <span class="topup-opt-icon">📲</span>
+        <div>
+          <div class="topup-opt-title">СБП</div>
+          <div class="topup-opt-sub">Без комиссии · мгновенно</div>
+        </div>
+      </div>
+      <div class="topup-option" id="opt-card" onclick="selectPayment('card')">
+        <span class="topup-opt-icon">💳</span>
+        <div>
+          <div class="topup-opt-title">Банковская карта</div>
+          <div class="topup-opt-sub">Visa, Mastercard, Мир</div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:14px">Сумма пополнения</div>
+      <div class="amount-grid">
+        <div class="amount-btn" onclick="selectAmount(this, 100)">100 ₽</div>
+        <div class="amount-btn selected" onclick="selectAmount(this, 200)">200 ₽</div>
+        <div class="amount-btn" onclick="selectAmount(this, 300)">300 ₽</div>
+        <div class="amount-btn" onclick="selectAmount(this, 500)">500 ₽</div>
+        <div class="amount-btn" onclick="selectAmount(this, 1000)">1 000 ₽</div>
+        <div class="amount-btn" onclick="selectAmount(this, 0)">Своя</div>
+      </div>
+
+      <p class="hint-warn">
+        ⚠ После оплаты активируй карту — поднеси к валидатору в транспорте или терминалу в метро
+      </p>
+      <button class="btn-primary" id="pay-btn" onclick="doTopup()">Пополнить на 200 ₽ →</button>
+      <p class="hint">Перенаправление на официальный сайт transportspb.com</p>
+    </div>
+  </div>
+
+  <!-- ═══ ИСТОРИЯ ═══ -->
+  <div class="screen" id="s-history">
+    <div class="topbar">
+      <div class="topbar-title">История</div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchHistTab(this, 'trips')">Поездки</div>
+      <div class="tab" onclick="switchHistTab(this, 'topups')">Пополнения</div>
+      <div class="tab" onclick="switchHistTab(this, 'stats')">Статистика</div>
+    </div>
+
+    <!-- Вкладка: Поездки -->
+    <div id="hist-trips">
+      <div class="section">
+        <button class="btn-primary" onclick="showAddTrip()">+ Добавить поездку</button>
+      </div>
+      <div class="section" style="padding-top:0">
+        <div class="section-label" id="hist-month-label">Июнь 2026</div>
+        <div class="card" style="padding:4px 16px" id="trips-list">
+          <div class="empty-state">
+            <p>Поездок пока нет</p>
+            <p class="empty-hint">Нажми «+ Добавить поездку»</p>
+          </div>
+        </div>
+        <p class="hint">* История вводится вручную</p>
+      </div>
+    </div>
+
+    <!-- Вкладка: Пополнения -->
+    <div id="hist-topups" style="display:none">
+      <div class="section">
+        <div class="card" style="padding:4px 16px" id="topups-list">
+          <div class="empty-state">
+            <p>Пополнений пока нет</p>
+            <p class="empty-hint">История появится после первого пополнения</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Вкладка: Статистика -->
+    <div id="hist-stats" style="display:none">
+      <div class="section">
+        <div class="grid2">
+          <div class="stat">
+            <div class="stat-label">Поездок всего</div>
+            <div class="stat-val" id="stat-total">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">За этот месяц</div>
+            <div class="stat-val" id="stat-month">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Потрачено всего</div>
+            <div class="stat-val" id="stat-spent-total">0 ₽</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">В этом месяце</div>
+            <div class="stat-val" id="stat-spent-month">0 ₽</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:0">
+          <div class="card-label">Самый частый транспорт</div>
+          <div class="card-value" id="stat-fav-transport" style="font-size:18px;margin-top:6px">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ МАРШРУТЫ ═══ -->
+  <div class="screen" id="s-routes">
+    <div class="topbar">
+      <div class="topbar-title">Маршруты СПб</div>
+      <div class="topbar-sub">Откуда → Куда</div>
+    </div>
+    <div class="section">
+      <div class="card" style="margin-bottom:10px">
+        <div class="route-field" onclick="focusRouteField('from')">
+          <span style="font-size:16px">📍</span>
+          <div style="flex:1">
+            <div style="font-size:11px;color:#888">Откуда</div>
+            <div class="route-field-val" id="route-from">Введи станцию</div>
+          </div>
+        </div>
+        <div class="route-divider"></div>
+        <div class="route-field" onclick="focusRouteField('to')">
+          <span style="font-size:16px">🏁</span>
+          <div style="flex:1">
+            <div style="font-size:11px;color:#888">Куда</div>
+            <div class="route-field-val" id="route-to">Введи станцию</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="findRoute()">Найти маршрут</button>
+
+      <div id="route-result" style="display:none; margin-top:14px">
+        <div class="section-label">Оптимальный маршрут · <span id="route-time"></span></div>
+        <div class="card" style="padding:14px 16px" id="route-stops"></div>
+        <p class="hint">Данные: Яндекс.Транспорт (в разработке)</p>
+      </div>
+
+      <div id="route-placeholder" style="margin-top:20px">
+        <p class="hint">🚇 Введи начальную и конечную станции, чтобы найти маршрут</p>
+        <p class="hint" style="margin-top:8px">В MVP: поиск маршрутов через Яндекс.Карты</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ НАСТРОЙКИ ═══ -->
+  <div class="screen" id="s-settings">
+    <div class="topbar">
+      <div class="topbar-title">Настройки</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Карта Подорожник</div>
+      <div class="card">
+        <div class="card-label">Номер карты (последние 4 цифры)</div>
+        <input class="input-field" type="number" id="card-number-input" placeholder="3078" maxlength="4"
+          oninput="saveCardNumber(this.value)">
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="card-label">Текущий баланс (₽)</div>
+        <input class="input-field" type="number" id="balance-input" placeholder="84"
+          oninput="saveBalance(this.value)">
+        <div style="font-size:11px;color:#aaa;margin-top:8px">
+          Обновляй вручную после поездки или пополнения
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:14px">Уведомления</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13px;font-weight:600">Низкий баланс</div>
+            <div style="font-size:11px;color:#888">Уведомить, если баланс ниже 100 ₽</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="notif-toggle" onchange="saveNotifPref(this.checked)" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:14px">О приложении</div>
+      <div class="card">
+        <div class="row" style="border-bottom:none">
+          <div class="row-left">
+            <div>
+              <div class="row-title">Версия</div>
+              <div class="row-sub">MVP v0.1</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#aaa">Июнь 2026</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ МОДАЛКА: Добавить поездку ═══ -->
+  <div class="modal-overlay" id="modal-add-trip" style="display:none" onclick="closeModal(event)">
+    <div class="modal">
+      <div class="modal-title">Добавить поездку</div>
+      <div class="section-label">Вид транспорта</div>
+      <div class="transport-grid">
+        <div class="transport-btn selected" data-type="metro" onclick="selectTransport(this)">🚇 Метро</div>
+        <div class="transport-btn" data-type="bus" onclick="selectTransport(this)">🚌 Автобус</div>
+        <div class="transport-btn" data-type="tram" onclick="selectTransport(this)">🚋 Трамвай</div>
+        <div class="transport-btn" data-type="trolley" onclick="selectTransport(this)">🚎 Троллейбус</div>
+      </div>
+      <div class="section-label" style="margin-top:12px">Маршрут / Номер</div>
+      <input class="input-field" id="trip-route-input" placeholder="Напр.: №54 или Невский пр.">
+      <div class="section-label" style="margin-top:12px">Стоимость (₽)</div>
+      <input class="input-field" type="number" id="trip-cost-input" placeholder="42" value="42">
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn-secondary" style="margin-top:0" onclick="closeAddTrip()">Отмена</button>
+        <button class="btn-primary" style="margin-top:0" onclick="addTrip()">Добавить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Нижняя навигация ═══ -->
+  <div class="navbar">
+    <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Главная</span>
+    </div>
+    <div class="nav-item" id="nav-topup" onclick="switchTab('topup')">
+      <span class="nav-icon">💳</span>
+      <span class="nav-label">Пополнить</span>
+    </div>
+    <div class="nav-item" id="nav-history" onclick="switchTab('history')">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">История</span>
+    </div>
+    <div class="nav-item" id="nav-routes" onclick="switchTab('routes')">
+      <span class="nav-icon">🗺</span>
+      <span class="nav-label">Маршруты</span>
+    </div>
+    <div class="nav-item" id="nav-settings" onclick="switchTab('settings')">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">Настройки</span>
+    </div>
+  </div>
+
+  <!-- JS-файлы -->
+  <script src="js/storage.js"></script>
+  <script src="js/telegram.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
