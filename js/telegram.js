@@ -1,5 +1,5 @@
 /**
- * telegram.js — Интеграция с Telegram Mini App API
+ * telegram.js - интеграция с Telegram Mini App API
  * Документация: https://core.telegram.org/bots/webapps
  */
 
@@ -9,7 +9,7 @@ const TG = {
 
   init() {
     if (!this.app) {
-      console.warn('Telegram WebApp API недоступен — работаем в обычном браузере');
+      console.warn('Telegram WebApp API недоступен, работаем в обычном браузере');
       return;
     }
 
@@ -19,7 +19,7 @@ const TG = {
     // Разворачиваем на весь экран
     this.app.expand();
 
-    // Цвет шапки — под наш бренд
+    // Цвет шапки под наш бренд
     this.app.setHeaderColor('#1D9E75');
   },
 
@@ -62,7 +62,7 @@ const TG = {
     }
   },
 
-  // Haptic feedback — тактильный отклик на действие
+  // Haptic feedback, тактильный отклик на действие
   haptic(type = 'light') {
     // type: 'light' | 'medium' | 'heavy' | 'error' | 'success' | 'warning'
     try {

@@ -1,5 +1,5 @@
 /**
- * storage.js — Работа с localStorage
+ * storage.js - работа с localStorage
  * Хранит данные пользователя локально в браузере Telegram
  */
 
